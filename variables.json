@@ -1,4 +1,5 @@
 {
+    "prefix": "renpy_",
     "images": [
         "fedora"
     ],

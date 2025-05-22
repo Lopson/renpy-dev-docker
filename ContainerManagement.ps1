@@ -1,6 +1,6 @@
-[string]$ContainerPrefix = "renpy_";
 [string]$VariablesPath = "$PSScriptRoot$([IO.Path]::DirectorySeparatorChar)variables.json";
 $Variables = Get-Content -LiteralPath $VariablesPath | ConvertFrom-Json;
+[string]$ContainerPrefix = $Variables.prefix;
 
 function Test-ContainerName {
     [OutputType([bool])]
