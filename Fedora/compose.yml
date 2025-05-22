@@ -3,8 +3,8 @@ name: renpy_testing
 services:
   renpy:
     build:
-      context: .
-      dockerfile: fedora_glx_xdg.dockerfile
+      context: ../
+      dockerfile: ./fedora/fedora_glx_xdg.dockerfile
     container_name: renpy_fedora
     volumes:
       - ${DOCKER_MOUNT}
