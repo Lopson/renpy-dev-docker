@@ -1,7 +1,8 @@
 {
     "prefix": "renpy_",
     "images": [
-        "fedora"
+        "fedora",
+        "ubuntu"
     ],
     "volume": "D:\\Testing:/mnt/testing"
 }
