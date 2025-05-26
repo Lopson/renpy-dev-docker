@@ -132,6 +132,10 @@ function set_locale () {
     export LC_ALL="$1";
     export LANG="$1";
 
+    truncate -s 0 /etc/locale.conf;
+    echo "LANG=$LANG" >> /etc/locale.conf;
+    echo "LC_ALL=$LC_ALL" >> /etc/locale.conf;
+
     return 0;
 }
 
@@ -167,5 +171,35 @@ function set_en_locale () {
     fi
 
     set_locale "en_$1.UTF-8";
+    return $?;
+}
+
+function dockerfile_set_locale () {
+    if [ "$1" == "jp" ] && [ "$#" -ne 1 ]; then
+        echo "[ERROR] Invalid number of arguments" >&2;
+        return 10;
+    fi
+    
+    if [ "$1" == "en" ] || [ "$1" == "zh" ] && [ "$#" -ne 2 ]; then
+        echo "[ERROR] Invalid number of arguments" >&2;
+        return 10;
+    fi
+
+    case "$1" in
+        "en")
+            set_en_locale "$2";
+            ;;
+        "jp")
+            set_jp_locale;
+            ;;
+        "zh")
+            set_zh_locale "$2";
+            ;;
+        *)
+            echo "[ERROR] Invalid language given" >&2;
+            return 11;
+            ;;
+    esac
+
     return $?;
 }
