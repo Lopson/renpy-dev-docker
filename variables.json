@@ -5,9 +5,9 @@
         "ubuntu"
     ],
     "locales": [
-        ["en", "US"],
-        ["zh", "CN"],
-        ["jp"]
+        "en",
+        "zh",
+        "jp"
     ],
     "volume": "D:\\Testing:/mnt/testing"
 }

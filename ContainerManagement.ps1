@@ -25,12 +25,11 @@ function Test-ContainerLocale {
 
     [OutputType([bool])]
     param(
-        [ValidateNotNullOrEmpty()][string]$Locale,
-        [string]$Sublocale
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()][string]$Locale
     )
 
-    if (-not [string]::IsNullOrWhiteSpace($Locale)) { $Locale = $Locale.ToLower(); }
-    if (-not [string]::IsNullOrWhiteSpace($Sublocale)) { $Sublocale = $Sublocale.ToUpper() };
+    $Locale = $Locale.ToLower();
 
     if (-not ($Variables.locales)) {
         throw New-Object System.MemberAccessException(
@@ -38,18 +37,8 @@ function Test-ContainerLocale {
         );
     }
 
-    [string[]]$LocalesList = $Variables.locales | ForEach-Object {
-        if ($_.Length -gt 1) { $_[0].ToLower() } };
-    [string[]]$SublocalesList = $Variables.locales | ForEach-Object {
-        if ($_.Length -eq 2) { $_[1].ToUpper(); } };
-
-    if (-not [string]::IsNullOrWhiteSpace($Locale) -and `
-            -not ($LocalesList -contains $Locale)) {
-        return $false;
-    }
-
-    if (-not [string]::IsNullOrWhiteSpace($Sublocale) -and `
-            -not ($SublocalesList -contains $Sublocale)) {
+    [string[]]$LocalesList = $Variables.locales | ForEach-Object { $_.ToLower() };
+    if (-not ($LocalesList -contains $Locale)) {
         return $false;
     }
 
@@ -109,8 +98,8 @@ function Initialize-RenpyContainer {
         [Parameter(Mandatory = $true)]
         [ValidateScript({ Test-ContainerName -Container $_ })][string]$Container,
         [Parameter(Mandatory = $true)]
-        [ValidateScript({ Test-ContainerLocale -Container $_ })][string]$Locale,
-        [ValidateScript({ Test-ContainerLocale -Sublocale $_ })][string]$Sublocale,
+        [ValidateScript({ Test-ContainerLocale -Locale $_ })][string]$Locale,
+        [string]$Sublocale,
         [string]$Volume
     )
 
@@ -120,8 +109,8 @@ function Initialize-RenpyContainer {
 
     [System.Text.StringBuilder]$EnvFile = [System.Text.StringBuilder]::new();
     $EnvFile.Append("DOCKER_MOUNT=`"$Volume`"") > $null;
-    $EnvFile.Append("LOCALE=`"$Locale`"") > $null;
-    $EnvFile.Append("SUBLOCALE=`"$Sublocale`"") > $null;
+    $EnvFile.Append("LOCALE=`"$($Locale.ToLower())`"") > $null;
+    $EnvFile.Append("SUBLOCALE=`"$($Sublocale.ToUpper())`"") > $null;
 
     [string]$EnvFilePath = $(Get-EnvFilePath -Container $Container);
     Set-Content -Value $EnvFile.ToString() -Encoding "utf8BOM" -LiteralPath $EnvFilePath;
@@ -168,8 +157,8 @@ function Build-RenpyImage {
         [ValidateScript({ Test-ContainerName -Container $_ })]
         [string]$Container,
         [Parameter(Mandatory = $true)]
-        [ValidateScript({ Test-ContainerLocale -Container $_ })][string]$Locale,
-        [ValidateScript({ Test-ContainerLocale -Sublocale $_ })][string]$Sublocale,
+        [ValidateScript({ Test-ContainerLocale -Locale $_ })][string]$Locale,
+        [string]$Sublocale,
         [string]$Volume
     )
 
