@@ -3,6 +3,9 @@ name: renpy_testing
 services:
   renpy:
     build:
+      args:
+        - DESIRED_LOCALE=${LOCALE}
+        - DESIRED_SUBLOCALE=${SUBLOCALE}
       context: ../
       dockerfile: ./fedora/fedora_glx_xdg.dockerfile
     container_name: renpy_fedora

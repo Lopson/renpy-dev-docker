@@ -4,5 +4,10 @@
         "fedora",
         "ubuntu"
     ],
+    "locales": [
+        ["en", "US"],
+        ["zh", "CN"],
+        ["jp"]
+    ],
     "volume": "D:\\Testing:/mnt/testing"
 }
