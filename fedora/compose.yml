@@ -1,4 +1,4 @@
-name: renpy_testing
+name: renpy_fedora
 
 services:
   renpy:

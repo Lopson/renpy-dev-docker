@@ -179,5 +179,10 @@ function Connect-RenpyContainer {
         [string]$Container
     )
 
-    docker exec -it "$ContainerPrefix$Container" bash;
+    if ($Container -eq "ubuntu") {
+        docker exec -it "$ContainerPrefix$Container" login -f root;
+    }
+    else {
+        docker exec -it "$ContainerPrefix$Container" bash;
+    }
 }

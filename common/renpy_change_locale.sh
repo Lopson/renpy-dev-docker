@@ -1,5 +1,20 @@
 #!/bin/bash
 
+function test_ubuntu () {
+    if [ ! -f "/etc/lsb-release" ]; then
+        return 1;
+    fi
+
+    local distribution_id;
+    distribution_id=$(grep "DISTRIB_ID" "/etc/lsb-release" | cut -d "=" -f 2);
+
+    if [ ! "$distribution_id" = "Ubuntu" ]; then
+        return 1;
+    fi
+
+    return 0;
+}
+
 function check_language_available () {
     local locales;
     mapfile -t locales < <(locale -a | cut -d "." -f 1);
@@ -131,10 +146,23 @@ function set_locale () {
 
     export LC_ALL="$1";
     export LANG="$1";
+    if test_ubuntu; then
+        export LANGUAGE="$1";
+    fi
 
-    truncate -s 0 /etc/locale.conf;
-    echo "LANG=$LANG" >> /etc/locale.conf;
-    echo "LC_ALL=$LC_ALL" >> /etc/locale.conf;
+    if [ -f "/etc/locale.conf" ]; then
+        truncate -s 0 /etc/locale.conf;
+    else
+        touch "/etc/locale.conf";
+    fi
+
+    {
+        echo "LANG=$LANG"; 
+        echo "LC_ALL=$LC_ALL";
+        if test_ubuntu; then
+            echo "LANGUAGE=$LANGUAGE";
+        fi
+    } >> /etc/locale.conf;
 
     return 0;
 }

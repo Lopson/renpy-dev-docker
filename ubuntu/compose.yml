@@ -1,8 +1,11 @@
-name: renpy_testing
+name: renpy_ubuntu
 
 services:
   renpy:
     build:
+      args:
+        - DESIRED_LOCALE=${LOCALE}
+        - DESIRED_SUBLOCALE=${SUBLOCALE}
       context: ../
       dockerfile: ./ubuntu/ubuntu.dockerfile
     container_name: renpy_ubuntu
