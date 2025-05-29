@@ -7,3 +7,5 @@ SHELL ["/bin/bash", "-c"]
 ARG DESIRED_LOCALE
 ARG DESIRED_SUBLOCALE
 RUN source /etc/profile; dockerfile_set_locale ${DESIRED_LOCALE} ${DESIRED_SUBLOCALE}
+RUN printf "\nexport XDG_RUNTIME_DIR=/run/user/$(id -u)" >> /root/.bashrc
+RUN printf "\nexport DISPLAY=host.docker.internal:0.0" >> /root/.bashrc
