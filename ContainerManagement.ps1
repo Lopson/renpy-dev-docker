@@ -109,7 +109,7 @@ function Initialize-RenpyContainer {
 
     [System.Text.StringBuilder]$EnvFile = [System.Text.StringBuilder]::new();
     $EnvFile.Append("DOCKER_MOUNT=`"$Volume`"") > $null;
-    $EnvFile.Append("LOCALE=`"$($Locale.ToLower())`"") > $null;
+    $EnvFile.Append("LOCALE=`"$Locale`"") > $null;
     $EnvFile.Append("SUBLOCALE=`"$($Sublocale.ToUpper())`"") > $null;
 
     [string]$EnvFilePath = $(Get-EnvFilePath -Container $Container);

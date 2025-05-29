@@ -7,7 +7,9 @@
     "locales": [
         "en",
         "zh",
-        "jp"
+        "jp",
+        "C",
+        "POSIX"
     ],
     "volume": "D:\\Testing:/mnt/testing"
 }

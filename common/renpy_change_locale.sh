@@ -223,6 +223,12 @@ function dockerfile_set_locale () {
         "zh")
             set_zh_locale "$2";
             ;;
+        "C")
+            set_locale "C.UTF-8";
+            ;;
+        "POSIX")
+            set_locale "POSIX";
+            ;;
         *)
             echo "[ERROR] Invalid language given" >&2;
             return 11;
