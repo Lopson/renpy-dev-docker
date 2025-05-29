@@ -1,0 +1,25 @@
+name: renpy_manjaro
+
+services:
+  renpy:
+    build:
+      args:
+        - DESIRED_LOCALE=${LOCALE}
+        - DESIRED_SUBLOCALE=${SUBLOCALE}
+      context: ../
+      dockerfile: ./manjaro/manjaro.dockerfile
+    container_name: renpy_manjaro
+    volumes:
+      - ${DOCKER_MOUNT}
+    environment:
+      - DISPLAY=host.docker.internal:0.0
+    network_mode: host
+    stdin_open: true
+    tty: true
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

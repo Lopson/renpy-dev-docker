@@ -178,8 +178,10 @@ function Connect-RenpyContainer {
         [ValidateScript({ Test-ContainerName -Container $_ })]
         [string]$Container
     )
+    
+    [string[]]$LoginContainers = "ubuntu", "manjaro";
 
-    if ($Container -eq "ubuntu") {
+    if ($LoginContainers -contains $Container) {
         docker exec -it "$ContainerPrefix$Container" login -f root;
     }
     else {

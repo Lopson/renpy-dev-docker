@@ -2,7 +2,8 @@
     "prefix": "renpy_",
     "images": [
         "fedora",
-        "ubuntu"
+        "ubuntu",
+        "manjaro"
     ],
     "locales": [
         "en",
