@@ -2,7 +2,7 @@ FROM manjarolinux/base:latest
 RUN pacman -Sy --noconfirm
 RUN pacman -Sy nano libice  libsm  libx11  libxau  libxcb  libxdmcp \
 libxext  libxfixes  libxi  libxmu  libxrender  libxt xcb-proto \
-xorgproto glew glibc-locales --noconfirm
+xorgproto glibc-locales mesa-amber --noconfirm
 COPY ./common /etc/profile.d/
 SHELL ["/bin/bash", "-c"]
 RUN source /etc/profile; update_locale_gen
