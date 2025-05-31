@@ -109,6 +109,19 @@ function check_locale_available () {
     return 1
 }
 
+function update_locale_gen () {
+    if [ ! -f "/etc/locale.gen" ]; then
+        echo "[ERROR] File /etc/locale.gen not found" >&2;
+        return 1;
+    fi
+    
+    sed -i 's/^#\(en_.*UTF-8\)/\1/' /etc/locale.gen;
+    sed -i 's/^#\(ja_JP.*UTF-8\)/\1/' /etc/locale.gen;
+    sed -i 's/^#\(zh_.*UTF-8\)/\1/' /etc/locale.gen;
+
+    return 0;
+}
+
 function set_locale () {
     local locale;
     locale=$(cut -d "." -f 1 <<<"$1");
@@ -146,8 +159,25 @@ function set_locale () {
 
     export LC_ALL="$1";
     export LANG="$1";
-    if test_ubuntu; then
-        export LANGUAGE="$1";
+    if test_ubuntu && [ "$locale" != "C" ] && [ "$locale" != "POSIX" ]; then
+        # Let's handle Chinese-specific edge cases.
+        # https://www.gnu.org/software/gettext/manual/gettext.html#Specifying-a-Priority-List-of-Languages
+        case $locale in
+            "zh_SG")
+                LANGUAGE="zh_SG:zh_CN";
+                ;;
+            "zh_HK")
+                LANGUAGE="zh_HK:zh_TW";
+                ;;
+            "zh_MO")
+                LANGUAGE="zh_MO:zh_TW";
+                ;;
+            *)
+                LANGUAGE="$locale";
+                ;;
+        esac
+        export LANGUAGE;
+
     fi
 
     if [ -f "/etc/locale.conf" ]; then
