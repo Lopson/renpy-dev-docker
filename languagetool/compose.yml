@@ -1,0 +1,16 @@
+name: renpy_proofreading
+
+services:
+  proofreader:
+    image: elestio/languagetool:latest
+    container_name: languagetool
+    ports:
+      - 127.0.0.1:8010:8010
+    stdin_open: false
+    tty: false
+    # environment:
+      # - langtool_languageModel=/ngrams
+      # - Java_Xms=512m
+      # - Java_Xmx=1g
+    # volumes:
+      # - ./data:/ngrams
