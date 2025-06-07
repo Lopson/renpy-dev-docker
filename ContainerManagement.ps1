@@ -1,6 +1,31 @@
+function Test-NullOrEmpty {
+    [OutputType([bool])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [AllowNull()]
+        [AllowEmptyString()]
+        [string]$String
+    )
+    
+    if ([string]::IsNullOrWhiteSpace($String)) {
+        return $false;
+    }
+    return $true;
+}
+
 [string]$VariablesPath = "$PSScriptRoot$([IO.Path]::DirectorySeparatorChar)variables.json";
 $Variables = Get-Content -LiteralPath $VariablesPath | ConvertFrom-Json;
 [string]$ContainerPrefix = $Variables.prefix;
+[string]$RenpySdkBaseUrl = "https://renpy.org/dl/{0}/renpy-{0}-sdk.tar.bz2";
+
+if (-not (Test-NullOrEmpty -String $Variables.volume)) {
+    throw New-Object System.ArgumentException(
+        "The value `"volume`" must be filled out in the variables file");
+}
+if (-not (Test-NullOrEmpty -String $Variables.renpy_sdk_version)) {
+    throw New-Object System.ArgumentException(
+        "The value `"renpy_sdk_version`" must be filled out in the variables file");
+}
 
 class ValidContainerGenerator : System.Management.Automation.IValidateSetValuesGenerator {
     [string[]] GetValidValues() {
@@ -29,21 +54,6 @@ class ValidLocaleGenerator : System.Management.Automation.IValidateSetValuesGene
     [string[]] GetValidValues() {
         return $Script:Variables.locales;
     }
-}
-
-function Test-VolumePath {
-    [OutputType([bool])]
-    param(
-        [Parameter(Mandatory = $true)]
-        [AllowNull()]
-        [AllowEmptyString()]
-        [string]$Volume
-    )
-    
-    if ([string]::IsNullOrWhiteSpace($Volume)) {
-        return $false;
-    }
-    return $true;
 }
 
 function Get-ComposePath {
@@ -89,20 +99,25 @@ function Initialize-RenpyContainer {
         [ValidateSet([ValidLocaleGenerator])]
         [string]$Locale,
         [string]$Sublocale,
+        [string]$RenpySdk,
         [string]$Volume
     )
 
-    if (-not (Test-VolumePath -Volume $Volume)) {
+    if (-not (Test-NullOrEmpty -String $Volume)) {
         $Volume = $Variables.volume;
+    }
+    if (-not (Test-NullOrEmpty -String $RenpySdk)) {
+        $RenpySdk = $Variables.renpy_sdk_version;
     }
 
     [System.Text.StringBuilder]$EnvFile = [System.Text.StringBuilder]::new();
-    $EnvFile.Append("DOCKER_MOUNT=`"$Volume`"") > $null;
-    $EnvFile.Append("LOCALE=`"$Locale`"") > $null;
-    $EnvFile.Append("SUBLOCALE=`"$($Sublocale.ToUpper())`"") > $null;
+    $EnvFile.AppendLine("DOCKER_MOUNT=`"$Volume`"") > $null;
+    $EnvFile.AppendLine("LOCALE=`"$Locale`"") > $null;
+    $EnvFile.AppendLine("SUBLOCALE=`"$($Sublocale.ToUpper())`"") > $null;
+    $EnvFile.AppendLine("RENPY_SDK_URL=`"$($RenpySdkBaseUrl -f $RenpySdk)`"") > $null;
 
     [string]$EnvFilePath = $(Get-EnvFilePath -Container $Container);
-    Set-Content -Value $EnvFile.ToString() -Encoding "utf8BOM" -LiteralPath $EnvFilePath;
+    Set-Content -NoNewline -Value $EnvFile.ToString() -Encoding "utf8BOM" -LiteralPath $EnvFilePath;
     return;
 }
 
@@ -167,11 +182,12 @@ function Build-RenpyImage {
         [ValidateSet([ValidLocaleGenerator])]
         [string]$Locale,
         [string]$Sublocale,
+        [string]$RenpySdk,
         [string]$Volume
     )
 
     Initialize-RenpyContainer -Container $Container -Volume $Volume `
-        -Locale $Locale -Sublocale $Sublocale;
+        -Locale $Locale -Sublocale $Sublocale -RenpySdk $RenpySdk;
     [string]$EnvFilePath = $(Get-EnvFilePath -Container $Container);
 
     docker compose --file $(Get-ComposePath -Container $Container) `

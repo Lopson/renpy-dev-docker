@@ -13,5 +13,6 @@
         "C",
         "POSIX"
     ],
-    "volume": "D:\\Testing:/mnt/testing"
+    "volume": "D:\\Testing:/mnt/testing",
+    "renpy_sdk_version": "8.3.7"
 }
