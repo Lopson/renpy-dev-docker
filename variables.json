@@ -3,7 +3,8 @@
     "images": [
         "fedora",
         "ubuntu",
-        "manjaro"
+        "manjaro",
+        "languagetool"
     ],
     "locales": [
         "en",

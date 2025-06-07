@@ -8,6 +8,20 @@ class ValidContainerGenerator : System.Management.Automation.IValidateSetValuesG
     }
 }
 
+class ValidBuildGenerator : System.Management.Automation.IValidateSetValuesGenerator {
+    [string[]] GetValidValues() {
+        return [ValidContainerGenerator]::new().GetValidValues() | `
+            Where-Object { $_ -ne "languagetool"};
+    }
+}
+
+class ValidConnectGenerator : System.Management.Automation.IValidateSetValuesGenerator {
+    [string[]] GetValidValues() {
+        return [ValidContainerGenerator]::new().GetValidValues() | `
+            Where-Object { $_ -ne "languagetool"};
+    }
+}
+
 class ValidLocaleGenerator : System.Management.Automation.IValidateSetValuesGenerator {
     # NOTE: Testing the locale + sublocale combo is up to the container.
     # There's no way for us to determine that at this level.
@@ -69,7 +83,8 @@ function Initialize-RenpyContainer {
     [OutputType([System.Void])]
     param (
         [Parameter(Mandatory = $true)]
-        [ValidateSet([ValidContainerGenerator])]
+        [ValidateSet([ValidBuildGenerator])]
+        $Container,
         [Parameter(Mandatory = $true)]
         [ValidateSet([ValidLocaleGenerator])]
         [string]$Locale,
@@ -99,9 +114,21 @@ function Start-RenpyContainer {
         [string]$Container
     )
     
-    [string]$EnvFilePath = $(Get-EnvFilePath -Container $Container);
-    docker compose --file $(Get-ComposePath -Container $Container) `
-        --env-file $EnvFilePath up --detach;
+    if ([ValidBuildGenerator]::new().GetValidValues() -contains $Container) {
+        [string]$EnvFilePath = $(Get-EnvFilePath -Container $Container);
+        if (-not $(Test-Path -LiteralPath $EnvFilePath)) {
+            throw New-Object System.ArgumentException(
+                "Couldn't find environment file $EnvFilePath, run Initialize-RenpyContainer"
+            );
+        }
+
+        docker compose --file $(Get-ComposePath -Container $Container) `
+            --env-file $EnvFilePath up --detach;    
+    }
+    else {
+        docker compose --file $(Get-ComposePath -Container $Container) `
+            up --detach;
+    }
 }
 
 function Stop-RenpyContainer {
@@ -112,23 +139,29 @@ function Stop-RenpyContainer {
         [string]$Container
     )
 
-    [string]$EnvFilePath = $(Get-EnvFilePath -Container $Container);
-    if (-not $(Test-Path -LiteralPath $EnvFilePath)) {
-        throw New-Object System.ArgumentException(
-            "Couldn't find environment file $EnvFilePath, run Initialize-RenpyContainer"
-        );
-    }
+    if ([ValidBuildGenerator]::new().GetValidValues() -contains $Container) {
+        [string]$EnvFilePath = $(Get-EnvFilePath -Container $Container);
+        if (-not $(Test-Path -LiteralPath $EnvFilePath)) {
+            throw New-Object System.ArgumentException(
+                "Couldn't find environment file $EnvFilePath, run Initialize-RenpyContainer"
+            );
+        }
 
-    docker compose --file $(Get-ComposePath -Container $Container) `
-        --env-file $EnvFilePath down;
-    # Remove-Item -LiteralPath $EnvFilePath;
+        docker compose --file $(Get-ComposePath -Container $Container) `
+            --env-file $EnvFilePath down;
+        # Remove-Item -LiteralPath $EnvFilePath;
+    }
+    else {
+        docker compose --file $(Get-ComposePath -Container $Container) `
+            down;
+    }
 }
 
 function Build-RenpyImage {
     [OutputType([System.Void])]
     param (
         [Parameter(Mandatory = $true)]
-        [ValidateSet([ValidContainerGenerator])]
+        [ValidateSet([ValidBuildGenerator])]
         [string]$Container,
         [Parameter(Mandatory = $true)]
         [ValidateSet([ValidLocaleGenerator])]
@@ -150,7 +183,7 @@ function Connect-RenpyContainer {
     [OutputType([System.Void])]
     param (
         [Parameter(Mandatory = $true)]
-        [ValidateSet([ValidContainerGenerator])]
+        [ValidateSet([ValidConnectGenerator])]
         [string]$Container
     )
     
