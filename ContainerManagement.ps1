@@ -2,47 +2,19 @@
 $Variables = Get-Content -LiteralPath $VariablesPath | ConvertFrom-Json;
 [string]$ContainerPrefix = $Variables.prefix;
 
-function Test-ContainerName {
-    [OutputType([bool])]
-    param([Parameter(Mandatory = $true)][ValidateNotNullOrEmpty()][string]$Container)
-    
-    if (-not ($Variables.images)) {
-        throw New-Object System.MemberAccessException(
-            "Variables file does not contain list of images"
-        );
+class ValidContainerGenerator : System.Management.Automation.IValidateSetValuesGenerator {
+    [string[]] GetValidValues() {
+        return $Script:Variables.images;
     }
-
-    if (-not ($Variables.images -contains $Container)) {
-        return $false;
-    }
-
-    return $true;
 }
 
-function Test-ContainerLocale {
+class ValidLocaleGenerator : System.Management.Automation.IValidateSetValuesGenerator {
     # NOTE: Testing the locale + sublocale combo is up to the container.
     # There's no way for us to determine that at this level.
 
-    [OutputType([bool])]
-    param(
-        [Parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()][string]$Locale
-    )
-
-    $Locale = $Locale.ToLower();
-
-    if (-not ($Variables.locales)) {
-        throw New-Object System.MemberAccessException(
-            "Variables file does not contain list of supported locales"
-        );
+    [string[]] GetValidValues() {
+        return $Script:Variables.locales;
     }
-
-    [string[]]$LocalesList = $Variables.locales | ForEach-Object { $_.ToLower() };
-    if (-not ($LocalesList -contains $Locale)) {
-        return $false;
-    }
-
-    return $true;
 }
 
 function Test-VolumePath {
@@ -64,7 +36,7 @@ function Get-ComposePath {
     [OutputType([string])]
     param(
         [Parameter(Mandatory = $true)]
-        [ValidateScript({ Test-ContainerName -Container $_ })]
+        [ValidateSet([ValidContainerGenerator])]
         [string]$Container
     )
     
@@ -75,7 +47,7 @@ function Get-DockerfilePath {
     [OutputType([string])]
     param(
         [Parameter(Mandatory = $true)]
-        [ValidateScript({ Test-ContainerName -Container $_ })]
+        [ValidateSet([ValidContainerGenerator])]
         [string]$Container
     )
     
@@ -86,7 +58,8 @@ function Get-EnvFilePath {
     [OutputType([string])]
     param(
         [Parameter(Mandatory = $true)]
-        [ValidateScript({ Test-ContainerName -Container $_ })][string]$Container
+        [ValidateSet([ValidContainerGenerator])]
+        [string]$Container
     )
 
     return "$([System.IO.Path]::GetTempPath())$Container.env";
@@ -96,9 +69,10 @@ function Initialize-RenpyContainer {
     [OutputType([System.Void])]
     param (
         [Parameter(Mandatory = $true)]
-        [ValidateScript({ Test-ContainerName -Container $_ })][string]$Container,
+        [ValidateSet([ValidContainerGenerator])]
         [Parameter(Mandatory = $true)]
-        [ValidateScript({ Test-ContainerLocale -Locale $_ })][string]$Locale,
+        [ValidateSet([ValidLocaleGenerator])]
+        [string]$Locale,
         [string]$Sublocale,
         [string]$Volume
     )
@@ -121,7 +95,7 @@ function Start-RenpyContainer {
     [OutputType([System.Void])]
     param (
         [Parameter(Mandatory = $true)]
-        [ValidateScript({ Test-ContainerName -Container $_ })]
+        [ValidateSet([ValidContainerGenerator])]
         [string]$Container
     )
     
@@ -134,7 +108,7 @@ function Stop-RenpyContainer {
     [OutputType([System.Void])]
     param (
         [Parameter(Mandatory = $true)]
-        [ValidateScript({ Test-ContainerName -Container $_ })]
+        [ValidateSet([ValidContainerGenerator])]
         [string]$Container
     )
 
@@ -154,10 +128,11 @@ function Build-RenpyImage {
     [OutputType([System.Void])]
     param (
         [Parameter(Mandatory = $true)]
-        [ValidateScript({ Test-ContainerName -Container $_ })]
+        [ValidateSet([ValidContainerGenerator])]
         [string]$Container,
         [Parameter(Mandatory = $true)]
-        [ValidateScript({ Test-ContainerLocale -Locale $_ })][string]$Locale,
+        [ValidateSet([ValidLocaleGenerator])]
+        [string]$Locale,
         [string]$Sublocale,
         [string]$Volume
     )
@@ -175,7 +150,7 @@ function Connect-RenpyContainer {
     [OutputType([System.Void])]
     param (
         [Parameter(Mandatory = $true)]
-        [ValidateScript({ Test-ContainerName -Container $_ })]
+        [ValidateSet([ValidContainerGenerator])]
         [string]$Container
     )
     
