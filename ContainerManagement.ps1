@@ -2,9 +2,7 @@ function Test-Wsl2DockerDesktopRunning {
     [OutputType([bool])]
     param()
 
-    if ($(Get-ChildItem "\\.\pipe\" | `
-        Where-Object {$_.FullName -eq "\\.\pipe\dockerDesktopLinuxEngine"}))
-    {
+    if ($(Get-ChildItem "\\.\pipe\dockerDesktopLinuxEngine")) {
         return $true;
     }
 
@@ -13,7 +11,7 @@ function Test-Wsl2DockerDesktopRunning {
 
 function Assert-Wsl2DockerDesktopRunning {
     if (-not $(Test-Wsl2DockerDesktopRunning)) {
-        throw New-Object System.IO.IOException.PipeException(
+        throw New-Object System.IO.IOException(
             "Docker Desktop is not running"
         );
     }
