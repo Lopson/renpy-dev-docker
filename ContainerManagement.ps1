@@ -18,9 +18,9 @@ $Variables = Get-Content -LiteralPath $VariablesPath | ConvertFrom-Json;
 [string]$ContainerPrefix = $Variables.prefix;
 [string]$RenpySdkBaseUrl = "https://renpy.org/dl/{0}/renpy-{0}-sdk.tar.bz2";
 
-if (-not (Test-NullOrEmpty -String $Variables.volume)) {
+if (-not (Test-NullOrEmpty -String $Variables.renpy_volume)) {
     throw New-Object System.ArgumentException(
-        "The value `"volume`" must be filled out in the variables file");
+        "The value `"renpy_volume`" must be filled out in the variables file");
 }
 if (-not (Test-NullOrEmpty -String $Variables.renpy_sdk_version)) {
     throw New-Object System.ArgumentException(
@@ -92,32 +92,59 @@ function Get-EnvFilePath {
 function Initialize-RenpyContainer {
     [OutputType([System.Void])]
     param (
-        [Parameter(Mandatory = $true)]
-        [ValidateSet([ValidBuildGenerator])]
+        [Parameter(Mandatory = $true, ParameterSetName = "GameContainer", Position = 0)]
+        [Parameter(Mandatory = $true, ParameterSetName = "LTContainer", Position = 0)]
+        [ValidateSet([ValidContainerGenerator])]
         $Container,
-        [Parameter(Mandatory = $true)]
+
+        [Parameter(Mandatory = $true, ParameterSetName = "GameContainer")]
         [ValidateSet([ValidLocaleGenerator])]
         [string]$Locale,
+        [Parameter(ParameterSetName = "GameContainer")]
         [string]$Sublocale,
+        [Parameter(ParameterSetName = "GameContainer")]
         [string]$RenpySdk,
-        [string]$Volume
+        [Parameter(ParameterSetName = "GameContainer")]
+        [string]$RenpyVolume,
+
+        [Parameter(ParameterSetName = "LTContainer")]
+        [string]$NGramVolume,
+        [Parameter(ParameterSetName = "LTContainer")]
+        [int]$LTPort
     )
 
-    if (-not (Test-NullOrEmpty -String $Volume)) {
-        $Volume = $Variables.volume;
-    }
-    if (-not (Test-NullOrEmpty -String $RenpySdk)) {
-        $RenpySdk = $Variables.renpy_sdk_version;
-    }
-
     [System.Text.StringBuilder]$EnvFile = [System.Text.StringBuilder]::new();
-    $EnvFile.AppendLine("DOCKER_MOUNT=`"$Volume`"") > $null;
-    $EnvFile.AppendLine("LOCALE=`"$Locale`"") > $null;
-    $EnvFile.AppendLine("SUBLOCALE=`"$($Sublocale.ToUpper())`"") > $null;
-    $EnvFile.AppendLine("RENPY_SDK_URL=`"$($RenpySdkBaseUrl -f $RenpySdk)`"") > $null;
+
+    switch ($PSCmdlet.ParameterSetName) {
+        "GameContainer" {
+            if (-not (Test-NullOrEmpty -String $RenpyVolume)) {
+                $RenpyVolume = $Variables.renpy_volume;
+            }
+            if (-not (Test-NullOrEmpty -String $RenpySdk)) {
+                $RenpySdk = $Variables.renpy_sdk_version;
+            }
+        
+            $EnvFile.AppendLine("DOCKER_MOUNT=`"$RenpyVolume`"") > $null;
+            $EnvFile.AppendLine("LOCALE=`"$Locale`"") > $null;
+            $EnvFile.AppendLine("SUBLOCALE=`"$($Sublocale.ToUpper())`"") > $null;
+            $EnvFile.AppendLine("RENPY_SDK_URL=`"$($RenpySdkBaseUrl -f $RenpySdk)`"") > $null;
+        }
+        "LTContainer" {
+            if (-not (Test-NullOrEmpty -String $NGramVolume)) {
+                $NGramVolume = $Variables.lt_ngrams_volume;
+            }
+            if ($null -eq $LTPort -or 0 -eq $LTPort) {
+                $LTPort = $Variables.lt_port;
+            }
+
+            $EnvFile.AppendLine("DOCKER_MOUNT=`"$NGramVolume`"") > $null;
+            $EnvFile.AppendLine("MAPPED_PORT=$LTPort") > $null;
+        }
+    }
 
     [string]$EnvFilePath = $(Get-EnvFilePath -Container $Container);
-    Set-Content -NoNewline -Value $EnvFile.ToString() -Encoding "utf8BOM" -LiteralPath $EnvFilePath;
+    Set-Content -NoNewline -Value $EnvFile.ToString() -Encoding "utf8BOM" `
+        -LiteralPath $EnvFilePath;
     return;
 }
 
@@ -129,21 +156,15 @@ function Start-RenpyContainer {
         [string]$Container
     )
     
-    if ([ValidBuildGenerator]::new().GetValidValues() -contains $Container) {
-        [string]$EnvFilePath = $(Get-EnvFilePath -Container $Container);
-        if (-not $(Test-Path -LiteralPath $EnvFilePath)) {
-            throw New-Object System.ArgumentException(
-                "Couldn't find environment file $EnvFilePath, run Initialize-RenpyContainer"
-            );
-        }
+    [string]$EnvFilePath = $(Get-EnvFilePath -Container $Container);
+    if (-not $(Test-Path -LiteralPath $EnvFilePath)) {
+        throw New-Object System.ArgumentException(
+            "Couldn't find environment file $EnvFilePath, run Initialize-RenpyContainer"
+        );
+    }
 
-        docker compose --file $(Get-ComposePath -Container $Container) `
-            --env-file $EnvFilePath up --detach;    
-    }
-    else {
-        docker compose --file $(Get-ComposePath -Container $Container) `
-            up --detach;
-    }
+    docker compose --file $(Get-ComposePath -Container $Container) `
+        --env-file $EnvFilePath up --detach;
 }
 
 function Stop-RenpyContainer {
@@ -154,22 +175,16 @@ function Stop-RenpyContainer {
         [string]$Container
     )
 
-    if ([ValidBuildGenerator]::new().GetValidValues() -contains $Container) {
-        [string]$EnvFilePath = $(Get-EnvFilePath -Container $Container);
-        if (-not $(Test-Path -LiteralPath $EnvFilePath)) {
-            throw New-Object System.ArgumentException(
-                "Couldn't find environment file $EnvFilePath, run Initialize-RenpyContainer"
-            );
-        }
+    [string]$EnvFilePath = $(Get-EnvFilePath -Container $Container);
+    if (-not $(Test-Path -LiteralPath $EnvFilePath)) {
+        throw New-Object System.ArgumentException(
+            "Couldn't find environment file $EnvFilePath, run Initialize-RenpyContainer"
+        );
+    }
 
-        docker compose --file $(Get-ComposePath -Container $Container) `
-            --env-file $EnvFilePath down;
-        # Remove-Item -LiteralPath $EnvFilePath;
-    }
-    else {
-        docker compose --file $(Get-ComposePath -Container $Container) `
-            down;
-    }
+    docker compose --file $(Get-ComposePath -Container $Container) `
+        --env-file $EnvFilePath down;
+    # Remove-Item -LiteralPath $EnvFilePath;
 }
 
 function Build-RenpyImage {
@@ -183,10 +198,10 @@ function Build-RenpyImage {
         [string]$Locale,
         [string]$Sublocale,
         [string]$RenpySdk,
-        [string]$Volume
+        [string]$RenpyVolume
     )
 
-    Initialize-RenpyContainer -Container $Container -Volume $Volume `
+    Initialize-RenpyContainer -Container $Container -RenpyVolume $RenpyVolume `
         -Locale $Locale -Sublocale $Sublocale -RenpySdk $RenpySdk;
     [string]$EnvFilePath = $(Get-EnvFilePath -Container $Container);
 
