@@ -208,7 +208,10 @@ function Build-RenpyImage {
         [Parameter(Mandatory = $true, ParameterSetName = "GameContainer", Position = 0)]
         [Parameter(Mandatory = $true, ParameterSetName = "LTContainer", Position = 0)]
         [ValidateSet([ValidContainerGenerator])]
-        $Container,
+        [string]$Container,
+        [Parameter(ParameterSetName = "GameContainer")]
+        [Parameter(ParameterSetName = "LTContainer")]
+        [bool]$NoCache = $false,
 
         [Parameter(Mandatory = $true, ParameterSetName = "GameContainer")]
         [ValidateSet([ValidLocaleGenerator])]
@@ -240,8 +243,14 @@ function Build-RenpyImage {
 
     [string]$EnvFilePath = $(Get-EnvFilePath -Container $Container);
 
-    docker compose --file $(Get-ComposePath -Container $Container) `
+    if ($NoCache) {
+        docker compose --file $(Get-ComposePath -Container $Container) `
+        --env-file $EnvFilePath build --no-cache;
+    }
+    else {
+        docker compose --file $(Get-ComposePath -Container $Container) `
         --env-file $EnvFilePath build;
+    }
     # Remove-Item -LiteralPath $EnvFilePath;
 }
 

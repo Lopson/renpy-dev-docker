@@ -6,6 +6,7 @@ services:
       args:
         - DESIRED_LOCALE=${LOCALE}
         - DESIRED_SUBLOCALE=${SUBLOCALE}
+        - DESIRED_RENPY_SDK=${RENPY_SDK_URL}
       context: ../
       dockerfile: ./ubuntu/ubuntu.dockerfile
     container_name: renpy_ubuntu
