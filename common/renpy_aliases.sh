@@ -1,4 +1,4 @@
 #!/bin/bash
 
-alias cdt="cd /mnt/testing";
+alias cdt='cd $TESTING_MOUNT';
 alias rmp="rm ./game/saves/persistent";
