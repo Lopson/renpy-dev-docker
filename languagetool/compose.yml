@@ -2,16 +2,19 @@ name: renpy_proofreading
 
 services:
   proofreader:
-    image: elestio/languagetool:latest
+    build:
+      context: ../
+      dockerfile: ./languagetool/lt_fasttext.dockerfile
+    # image: elestio/languagetool:latest
     container_name: languagetool
     ports:
-      - ${MAPPED_PORT}:${MAPPED_PORT}
+      - 127.0.0.1:${MAPPED_PORT}:${MAPPED_PORT}
     stdin_open: false
     tty: false
     environment:
-      - langtool_languageModel=/ngrams
-      # - langtool_fasttextBinary=/usr/bin/fasttext
-      # - langtool_fasttextModel=/fasttext-model.bin
+      - langtool_languageModel=/mnt/lt_support/n-grams
+      - langtool_fasttextBinary=/usr/bin/fasttext
+      - langtool_fasttextModel=/mnt/lt_support/FastText/lid.176.bin
       - Java_Xms=512m
       - Java_Xmx=1g
     volumes:

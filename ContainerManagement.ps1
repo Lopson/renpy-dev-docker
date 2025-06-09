@@ -1,3 +1,24 @@
+function Test-Wsl2DockerDesktopRunning {
+    [OutputType([bool])]
+    param()
+
+    if ($(Get-ChildItem "\\.\pipe\" | `
+        Where-Object {$_.FullName -eq "\\.\pipe\dockerDesktopLinuxEngine"}))
+    {
+        return $true;
+    }
+
+    return $false;
+}
+
+function Assert-Wsl2DockerDesktopRunning {
+    if (-not $(Test-Wsl2DockerDesktopRunning)) {
+        throw New-Object System.IO.IOException.PipeException(
+            "Docker Desktop is not running"
+        );
+    }
+}
+
 function Test-NullOrEmpty {
     [OutputType([bool])]
     param(
@@ -30,13 +51,6 @@ if (-not (Test-NullOrEmpty -String $Variables.renpy_sdk_version)) {
 class ValidContainerGenerator : System.Management.Automation.IValidateSetValuesGenerator {
     [string[]] GetValidValues() {
         return $Script:Variables.images;
-    }
-}
-
-class ValidBuildGenerator : System.Management.Automation.IValidateSetValuesGenerator {
-    [string[]] GetValidValues() {
-        return [ValidContainerGenerator]::new().GetValidValues() | `
-            Where-Object { $_ -ne "languagetool"};
     }
 }
 
@@ -112,6 +126,7 @@ function Initialize-RenpyContainer {
         [Parameter(ParameterSetName = "LTContainer")]
         [int]$LTPort
     )
+    Assert-Wsl2DockerDesktopRunning;
 
     [System.Text.StringBuilder]$EnvFile = [System.Text.StringBuilder]::new();
 
@@ -155,6 +170,7 @@ function Start-RenpyContainer {
         [ValidateSet([ValidContainerGenerator])]
         [string]$Container
     )
+    Assert-Wsl2DockerDesktopRunning;
     
     [string]$EnvFilePath = $(Get-EnvFilePath -Container $Container);
     if (-not $(Test-Path -LiteralPath $EnvFilePath)) {
@@ -174,6 +190,7 @@ function Stop-RenpyContainer {
         [ValidateSet([ValidContainerGenerator])]
         [string]$Container
     )
+    Assert-Wsl2DockerDesktopRunning;
 
     [string]$EnvFilePath = $(Get-EnvFilePath -Container $Container);
     if (-not $(Test-Path -LiteralPath $EnvFilePath)) {
@@ -190,19 +207,39 @@ function Stop-RenpyContainer {
 function Build-RenpyImage {
     [OutputType([System.Void])]
     param (
-        [Parameter(Mandatory = $true)]
-        [ValidateSet([ValidBuildGenerator])]
-        [string]$Container,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $true, ParameterSetName = "GameContainer", Position = 0)]
+        [Parameter(Mandatory = $true, ParameterSetName = "LTContainer", Position = 0)]
+        [ValidateSet([ValidContainerGenerator])]
+        $Container,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "GameContainer")]
         [ValidateSet([ValidLocaleGenerator])]
         [string]$Locale,
+        [Parameter(ParameterSetName = "GameContainer")]
         [string]$Sublocale,
+        [Parameter(ParameterSetName = "GameContainer")]
         [string]$RenpySdk,
-        [string]$RenpyVolume
-    )
+        [Parameter(ParameterSetName = "GameContainer")]
+        [string]$RenpyVolume,
 
-    Initialize-RenpyContainer -Container $Container -RenpyVolume $RenpyVolume `
-        -Locale $Locale -Sublocale $Sublocale -RenpySdk $RenpySdk;
+        [Parameter(ParameterSetName = "LTContainer")]
+        [string]$NGramVolume,
+        [Parameter(ParameterSetName = "LTContainer")]
+        [int]$LTPort
+    )
+    Assert-Wsl2DockerDesktopRunning;
+
+    switch ($Container) {
+        "languagetool" {
+            Initialize-RenpyContainer -Container $Container -NGramVolume $NGramVolume `
+                -LTPort $LTPort;
+        }
+        default {
+            Initialize-RenpyContainer -Container $Container -RenpyVolume $RenpyVolume `
+                -Locale $Locale -Sublocale $Sublocale -RenpySdk $RenpySdk;
+        }
+    }
+
     [string]$EnvFilePath = $(Get-EnvFilePath -Container $Container);
 
     docker compose --file $(Get-ComposePath -Container $Container) `
@@ -217,6 +254,7 @@ function Connect-RenpyContainer {
         [ValidateSet([ValidConnectGenerator])]
         [string]$Container
     )
+    Assert-Wsl2DockerDesktopRunning;
     
     [string[]]$LoginContainers = "ubuntu", "manjaro";
 

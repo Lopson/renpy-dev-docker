@@ -14,7 +14,7 @@
         "POSIX"
     ],
     "renpy_volume": "D:\\Testing:/mnt/testing",
-    "lt_ngrams_volume": "D:\\Testing\\LanguageTool n-grams:/ngrams",
+    "lt_ngrams_volume": "D:\\Testing\\LanguageTool:/mnt/lt_support",
     "lt_port": 8010,
     "renpy_sdk_version": "8.3.7"
 }
