@@ -2,7 +2,8 @@ function Test-Wsl2DockerDesktopRunning {
     [OutputType([bool])]
     param()
 
-    if ($(Get-ChildItem "\\.\pipe\dockerDesktopLinuxEngine")) {
+    if ($(Get-ChildItem "\\.\pipe\dockerDesktopLinuxEngine" `
+        -ErrorAction "SilentlyContinue")) {
         return $true;
     }
 
