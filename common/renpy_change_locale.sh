@@ -143,6 +143,7 @@ function set_locale () {
         for charmap in "${charmaps[@]}"; do
             if [ "$charmap" == "$encoding" ]; then
                 charmap_found=true;
+                break
             fi
         done
 

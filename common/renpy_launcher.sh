@@ -63,6 +63,7 @@ function set_renpy_project() {
     for project in "${projects_available[@]}"; do
         if [ "$project" == "$1" ]; then
             project_found=0
+            break
         fi
     done
     if [ $project_found -eq 1 ]; then
@@ -70,7 +71,8 @@ function set_renpy_project() {
         return 5
     fi
 
-    ./renpy.sh launcher set_project "$1"
+    ./renpy.sh launcher set_project "$projects_dir/$1"
+
     cd "$current_dir" || {
         echo "[ERROR] Couldn't return to original folder"
         return 2
